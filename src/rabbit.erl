@@ -888,7 +888,7 @@ total_queue_count() ->
     lists:foldl(fun (VirtualHost, Acc) ->
                   Acc + rabbit_amqqueue:count(VirtualHost)
                 end,
-                0, rabbit_vhost:list()).
+                0, rabbit_vhost:list_names()).
 
 %% TODO this only determines if the rabbit application has started,
 %% not if it is running, never mind plugins. It would be nice to have
