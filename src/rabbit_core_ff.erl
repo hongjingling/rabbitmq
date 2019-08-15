@@ -17,7 +17,8 @@
 -module(rabbit_core_ff).
 
 -export([quorum_queue_migration/3,
-         implicit_default_bindings_migration/3]).
+         implicit_default_bindings_migration/3,
+         virtual_host_description_migration/3]).
 
 -rabbit_feature_flag(
    {quorum_queue,
@@ -33,6 +34,13 @@
                        "being stored in the database",
       stability     => stable,
       migration_fun => {?MODULE, implicit_default_bindings_migration}
+     }}).
+
+-rabbit_feature_flag(
+   {virtual_host_description,
+    #{desc          => "Virtual host description and tag fields",
+      stability     => stable,
+      migration_fun => {?MODULE, virtual_host_description_migration}
      }}).
 
 %% -------------------------------------------------------------------
@@ -95,3 +103,24 @@ remove_explicit_default_bindings(FeatureName, Queues) ->
     [rabbit_binding:remove_default_exchange_binding_rows_of(Q)
      || Q <- Queues],
     ok.
+
+
+%% -------------------------------------------------------------------
+%% Virtual host description.
+%% -------------------------------------------------------------------
+
+virtual_host_description_migration(_FeatureName, _FeatureProps, enable) ->
+  Tab = rabbit_vhost,
+  rabbit_table:wait([Tab]),
+  Fun = fun ({vhost, VHost, Limits}) ->
+          {vhost, VHost, Limits, "", ""};
+            ({vhost, _VHost, _Limits, _Desc, _Tags} = Row) ->
+          Row
+        end,
+  case mnesia:transform_table(Tab, Fun, [virtual_host, limits, description, tags]) of
+      {atomic, ok}      -> ok;
+      {aborted, Reason} -> {error, Reason}
+  end;
+virtual_host_description_migration(_FeatureName, _FeatureProps, is_enabled) ->
+  Tab = rabbit_vhost,
+  lists:member(description, mnesia:table_info(Tab, attributes)).

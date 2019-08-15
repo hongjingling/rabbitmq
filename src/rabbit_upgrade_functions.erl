@@ -61,7 +61,6 @@
 -rabbit_upgrade({topic_permission,      mnesia,  []}).
 -rabbit_upgrade({queue_options,         mnesia, [queue_vhost_field]}).
 -rabbit_upgrade({exchange_options,      mnesia, [operator_policies]}).
--rabbit_upgrade({vhost_description,     mnesia, [vhost_limits]}).
 
 %% -------------------------------------------------------------------
 
@@ -78,16 +77,6 @@ vhost_limits() ->
               {vhost, VHost, undefined}
       end,
       [virtual_host, limits]).
-
--spec vhost_description() -> 'ok'.
-
-vhost_description() ->
-    transform(
-      rabbit_vhost,
-      fun ({vhost, VHost, Dummy}) ->
-              {vhost, VHost, Dummy, "", ""}
-      end,
-      [virtual_host, limits, description, tags]).
 
 %% It's a bad idea to use records or record_info here, even for the
 %% destination form. Because in the future, the destination form of
